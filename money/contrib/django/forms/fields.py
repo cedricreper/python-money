@@ -9,13 +9,13 @@ class MoneyField(forms.MultiValueField):
     A MultiValueField to represent both the quantity of money and the currency
     """
 
-    def __init__(self, choices=None, decimal_places=2, max_digits=12, *args, **kwargs):
+    def __init__(self, choices=None, decimal_places=2, max_digits=12, exclude_currency_select=False, *args, **kwargs):
         # Note that we catch args and kwargs that must only go to one field
         # or the other. The rest of them pass onto the decimal field.
         choices = choices or [
             (c.code, u"{0} - {1}".format(c.code, c.name),) for i, c in sorted(CURRENCY.items()) if c.code != u'XXX']
 
-        self.widget = CurrencySelectWidget(choices)
+        self.widget = CurrencySelectWidget(choices, exclude_currency_select=exclude_currency_select)
 
         fields = (
             forms.DecimalField(
@@ -23,9 +23,11 @@ class MoneyField(forms.MultiValueField):
                 decimal_places=decimal_places,
                 max_digits=max_digits,
                 **kwargs),
-
-            forms.ChoiceField(choices=choices)
         )
+
+        if not exclude_currency_select:
+            fields += (forms.ChoiceField(choices=choices),)
+
         super(MoneyField, self).__init__(fields, *args, **kwargs)
 
     def compress(self, data_list):
